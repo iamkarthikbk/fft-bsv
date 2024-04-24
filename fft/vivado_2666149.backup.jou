@@ -1,0 +1,33 @@
+#-----------------------------------------------------------
+# Vivado v2020.2 (64-bit)
+# SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
+# IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
+# Start of session at: Mon Apr 22 15:48:07 2024
+# Process ID: 2666149
+# Current directory: /scratch1/karthik/playground/iitm/fft-bsv/mit/audio/fft
+# Command line: vivado
+# Log file: /scratch1/karthik/playground/iitm/fft-bsv/mit/audio/fft/vivado.log
+# Journal file: /scratch1/karthik/playground/iitm/fft-bsv/mit/audio/fft/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project /scratch1/karthik/playground/iitm/fft-bsv/fft_1/fft_1.xpr
+update_compile_order -fileset sources_1
+set_property name synth_combo [get_runs synth_1]
+launch_runs synth_combo
+wait_on_run synth_combo
+synth_design -rtl -rtl_skip_mlo -name rtl_1
+close_design
+open_run synth_combo -name synth_combo
+set_property board_part digilentinc.com:arty-a7-35:part0:1.1 [current_project]
+close_design
+open_run synth_combo -name synth_combo
+close_design
+reset_run synth_combo
+launch_runs synth_combo
+wait_on_run synth_combo
+open_run synth_combo -name synth_combo
+report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_combo
+close_design
+open_run synth_combo -name synth_combo
+report_clock_interaction -delay_type min_max -significant_digits 3 -name timing_combo
+close_design

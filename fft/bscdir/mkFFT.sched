@@ -1,0 +1,23 @@
+=== Generated schedule for mkFFT ===
+
+Method schedule
+---------------
+Method: request_put
+Ready signal: fft_inputFIFO.i_notFull
+Conflict-free: response_get
+Conflicts: request_put
+ 
+Method: response_get
+Ready signal: fft_outputFIFO.i_notEmpty
+Conflict-free: request_put
+Conflicts: response_get
+ 
+Rule schedule
+-------------
+Rule: fft_comb_fft
+Predicate: fft_inputFIFO.i_notEmpty && fft_outputFIFO.i_notFull
+Blocking rules: (none)
+ 
+Logical execution order: request_put, response_get, fft_comb_fft
+
+=====================================
