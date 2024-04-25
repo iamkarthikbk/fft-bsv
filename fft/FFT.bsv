@@ -1,11 +1,12 @@
 
-import ClientServer::*;
-import Complex::*;
-import FIFO::*;
-import Reg6375::*;
-import GetPut::*;
-import Real::*;
-import Vector::*;
+import ClientServer ::*;
+import Complex      ::*;
+import FIFO         ::*;
+import Reg6375      ::*;
+import GetPut       ::*;
+import Real         ::*;
+import Vector       ::*;
+import BRAMFIFO     ::*;
 
 import AudioProcessorTypes::*;
 
@@ -161,8 +162,8 @@ module mkCombinationalFFT (FFT);
       return stage_ft(twiddles, stage, stage_in);
   endfunction
 
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkFIFO();
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkFIFO();
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
 
   // This rule performs fft using a big mass of combinational logic.
   rule comb_fft;
@@ -198,10 +199,10 @@ module mkPipelinedFFT (FFT);
       return stage_ft(twiddles, stage, stage_in);
   endfunction
 
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkFIFO();
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb1  <- mkFIFO();
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb2  <- mkFIFO();
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkFIFO();
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb1  <- mkSizedBRAMFIFO(1);
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb2  <- mkSizedBRAMFIFO(1);
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
 
   // rule for the first stage
   rule stage1;
@@ -249,8 +250,8 @@ module mkAECombinationalFFT (FFT);
     return ae_stage_ft(twiddles, stage, stage_in);
   endfunction
 
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkFIFO();
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkFIFO();
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
+  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
 
   // This rule performs fft using a big mass of combinational logic.
   rule comb_fft;
@@ -281,8 +282,8 @@ endmodule
 
 // Wrapper around The FFT module we actually want to use
 module mkFFT (FFT);
-    // FFT fft <- mkCombinationalFFT();
-    FFT fft <- mkAECombinationalFFT();
+    FFT fft <- mkCombinationalFFT();
+    // FFT fft <- mkAECombinationalFFT();
     // FFT fft <- mkPipelinedFFT();
 
     interface Put request = fft.request;
@@ -294,7 +295,7 @@ endmodule
 module mkIFFT (FFT);
 
     FFT fft <- mkFFT();
-    FIFO#(Vector#(FFT_POINTS, ComplexSample)) outfifo <- mkFIFO();
+    FIFO#(Vector#(FFT_POINTS, ComplexSample)) outfifo <- mkSizedBRAMFIFO(1);
 
     Integer n = valueof(FFT_POINTS);
     Integer lgn = valueof(FFT_LOG_POINTS);

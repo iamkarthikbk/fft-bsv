@@ -3,21 +3,59 @@
 Method schedule
 ---------------
 Method: request_put
-Ready signal: fft_inputFIFO.i_notFull
+Ready signal: ! ((fft_inputFIFO_rRdPtr.read + 2'd1) ==
+		 fft_inputFIFO_rWrPtr.read)
 Conflict-free: response_get
 Conflicts: request_put
  
 Method: response_get
-Ready signal: fft_outputFIFO.i_notEmpty
+Ready signal: (! (fft_outputFIFO_rRdPtr.read ==
+		  fft_outputFIFO_rWrPtr.read)) &&
+	      fft_outputFIFO_wDataOut.whas
 Conflict-free: request_put
 Conflicts: response_get
  
 Rule schedule
 -------------
-Rule: fft_comb_fft
-Predicate: fft_inputFIFO.i_notEmpty && fft_outputFIFO.i_notFull
+Rule: fft_inputFIFO_portA
+Predicate: True
 Blocking rules: (none)
  
-Logical execution order: request_put, response_get, fft_comb_fft
+Rule: fft_inputFIFO_portB
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fft_inputFIFO_portB_read_data
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fft_outputFIFO_portA
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fft_outputFIFO_portB
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fft_outputFIFO_portB_read_data
+Predicate: True
+Blocking rules: (none)
+ 
+Rule: fft_comb_fft
+Predicate: (! (fft_inputFIFO_rRdPtr.read == fft_inputFIFO_rWrPtr.read)) &&
+	   (! ((fft_outputFIFO_rRdPtr.read + 2'd1) ==
+	       fft_outputFIFO_rWrPtr.read)) &&
+	   fft_inputFIFO_wDataOut.whas
+Blocking rules: (none)
+ 
+Logical execution order: request_put,
+			 fft_inputFIFO_portB_read_data,
+			 fft_comb_fft,
+			 fft_inputFIFO_portA,
+			 fft_inputFIFO_portB,
+			 fft_outputFIFO_portB_read_data,
+			 response_get,
+			 fft_outputFIFO_portA,
+			 fft_outputFIFO_portB
 
 =====================================
