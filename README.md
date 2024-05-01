@@ -1,4 +1,4 @@
-# FFT Hardware written in BSV (and also C++).
+# FFT hardware written in BSV (and also C++).
 
 **_NOTE_**: This codebase uses MIT's lab2 harness from 6.375 as it's base.
 
