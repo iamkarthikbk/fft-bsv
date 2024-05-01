@@ -1,0 +1,5 @@
+// number of points on the fft.
+`define fft_points 8
+
+// number of bits in each real sample.
+`define sample_size 16
