@@ -7,13 +7,6 @@ export CustomTypes::*;
 export CustomReg::*;
 
 typedef Int#(16) Sample;
-
-interface AudioProcessor;
-    method Action putSampleInput(Sample in);
-    method ActionValue#(Sample) getSampleOutput();
-endinterface
-
-
 typedef Complex#(FixedPoint#(16, 16)) ComplexSample;
 
 // Turn a real Sample into a ComplexSample.
@@ -27,6 +20,6 @@ function Sample frcmplx(ComplexSample x);
 endfunction
 
 
-typedef 8 FFT_POINTS;
+typedef 8 FFT_POINTS; // 8-pt fft. this needs to be changed to 32 for comparinig with hls.
 typedef TLog#(FFT_POINTS) FFT_LOG_POINTS;
 
