@@ -2,13 +2,13 @@
 import ClientServer ::*;
 import Complex      ::*;
 import FIFO         ::*;
-import Reg6375      ::*;
+import CustomReg    ::*;
 import GetPut       ::*;
 import Real         ::*;
 import Vector       ::*;
 import BRAMFIFO     ::*;
 
-import AudioProcessorTypes::*;
+import CustomTypes::*;
 
 typedef Server#(
     Vector#(FFT_POINTS, ComplexSample),

@@ -1,10 +1,10 @@
 
 import Complex::*;
 import FixedPoint::*;
-import Reg6375::*;
+import CustomReg::*;
 
-export AudioProcessorTypes::*;
-export Reg6375::*;
+export CustomTypes::*;
+export CustomReg::*;
 
 typedef Int#(16) Sample;
 
