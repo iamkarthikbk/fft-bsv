@@ -167,10 +167,10 @@ module mkPipelinedFFT (FFT);
   endrule
 
   rule stage2;
-  Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-  stage_data[1] = isb1;
-  stage_data[2] = stage_f(1, stage_data[1]);
-  isb2._write(stage_data[2]);
+    Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
+    stage_data[1] = isb1;
+    stage_data[2] = stage_f(1, stage_data[1]);
+    isb2._write(stage_data[2]);
   endrule
 
   // rule for last stage
@@ -191,41 +191,71 @@ module mkPipelinedFFT (FFT);
 
 endmodule
 
+module mkFoldedFFT (FFT);
+
+    // Statically generate the twiddle factors table.
+    TwiddleTable twiddles = genTwiddles();
+
+    // Define the stage_f function which uses the generated twiddles.
+    function Vector#(FFT_POINTS, ComplexSample) stage_f(Bit#(TLog#(FFT_LOG_POINTS)) stage, Vector#(FFT_POINTS, ComplexSample) stage_in);
+        return stage_ft(twiddles, stage, stage_in);
+    endfunction
+
+    Reg#(Vector#(FFT_POINTS, ComplexSample)) theREG  <- mkRegularReg(unpack(0));
+
+    Reg#(Bit#(TLog#(FFT_LOG_POINTS))) stage_counter <- mkRegularReg(0);
+
+    // the user of this module is expected to pick up the output at the right cycle.
+    // i could provide a outp_ready method, or a waiting Action, but that would need modifications to the ifc.
+    rule the_folded_compute;
+        theREG <= stage_f(stage_counter, theREG);
+    endrule
+
+    interface Put request;
+        method Action put(Vector#(FFT_POINTS, ComplexSample) x) = theREG._write(bitReverse(x));
+    endinterface
+
+    interface Get response = toGet(theREG);
+endmodule
+
 // Wrapper around The FFT module we actually want to use
 module mkFFT (FFT);
     // FFT fft <- mkCombinationalFFT();
-    FFT fft <- mkPipelinedFFT();
+    // FFT fft <- mkPipelinedFFT();
+    FFT fft <- mkFoldedFFT();
 
     interface Put request = fft.request;
     interface Get response = fft.response;
 endmodule
 
-// Inverse FFT, based on the mkFFT module.
-// ifft[k] = fft[N-k]/N
-module mkIFFT (FFT);
+// this code is not being used at the moment.
+//
+// // Inverse FFT, based on the mkFFT module.
+// // ifft[k] = fft[N-k]/N
+// module mkIFFT (FFT);
 
-    FFT fft <- mkFFT();
-    FIFO#(Vector#(FFT_POINTS, ComplexSample)) outfifo <- mkSizedBRAMFIFO(1);
+//     FFT fft <- mkFFT();
+//     FIFO#(Vector#(FFT_POINTS, ComplexSample)) outfifo <- mkSizedBRAMFIFO(1);
 
-    Integer n = valueof(FFT_POINTS);
-    Integer lgn = valueof(FFT_LOG_POINTS);
+//     Integer n = valueof(FFT_POINTS);
+//     Integer lgn = valueof(FFT_LOG_POINTS);
 
-    function ComplexSample scaledown(ComplexSample x);
-        return cmplx(x.rel >> lgn, x.img >> lgn);
-    endfunction
+//     function ComplexSample scaledown(ComplexSample x);
+//         return cmplx(x.rel >> lgn, x.img >> lgn);
+//     endfunction
 
-    rule inversify (True);
-        let x <- fft.response.get();
-        Vector#(FFT_POINTS, ComplexSample) rx = newVector;
+//     rule inversify (True);
+//         let x <- fft.response.get();
+//         Vector#(FFT_POINTS, ComplexSample) rx = newVector;
 
-        for (Integer i = 0; i < n; i = i+1) begin
-            rx[i] = x[(n - i)%n];
-        end
-        outfifo.enq(map(scaledown, rx));
-    endrule
+//         for (Integer i = 0; i < n; i = i+1) begin
+//             rx[i] = x[(n - i)%n];
+//         end
+//         outfifo.enq(map(scaledown, rx));
+//     endrule
 
-    interface Put request = fft.request;
-    interface Get response = toGet(outfifo);
+//     interface Put request = fft.request;
+//     interface Get response = toGet(outfifo);
 
-endmodule
+// endmodule
 
