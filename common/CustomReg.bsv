@@ -1,4 +1,12 @@
 import RevertingVirtualReg::*;
+
+// retaining the regular mkReg
+module mkRegularReg#(t reset_val)(Reg#(t)) provisos(Bits#(t, tSz));
+    Reg#(t) _r <- Prelude::mkReg(reset_val);
+    method t _read = _r._read;
+    method Action _write(t x) = _r._write(x);
+endmodule
+
 // mkReg and mkRegU replacemen for _write C _write
 module mkReg#(t reset_val)(Reg#(t)) provisos (Bits#(t, tSz));
     Reg#(t) _r <- Prelude::mkReg(reset_val);
