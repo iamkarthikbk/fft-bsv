@@ -75,8 +75,8 @@ endfunction
 
 // this function expects m to be t1 multiplied with k. this function should be used when multiplication
 // is being done separately, outside this butterfly function.
-function Vector(2, ComplexSample) bfly2_epilog(ComplexSample t0, ComplexSample m);
-    Vector(2, ComplexSample) z = newVector();
+function Vector#(2, ComplexSample) bfly2_epilog(ComplexSample t0, ComplexSample m);
+    Vector#(2, ComplexSample) z = newVector();
     z[0] = t0 + m;
     z[1] = t0 - m;
 
