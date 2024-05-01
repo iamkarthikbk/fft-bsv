@@ -73,6 +73,16 @@ function Vector#(2, ComplexSample) bfly2(Vector#(2, ComplexSample) t, ComplexSam
     return z;
 endfunction
 
+// this function expects m to be t1 multiplied with k. this function should be used when multiplication
+// is being done separately, outside this butterfly function.
+function Vector(2, ComplexSample) bfly2_epilog(ComplexSample t0, ComplexSample m);
+    Vector(2, ComplexSample) z = newVector();
+    z[0] = t0 + m;
+    z[1] = t0 - m;
+
+    return z;
+endfunction
+
 // Perform a single stage of the FFT, consisting of butterflys and a single
 // permutation.
 // We pass the table of twiddles as an argument so we can look those up
