@@ -1,0 +1,20 @@
+# vivado journals and log files
+*.jou
+*.log
+
+# bluespec build objects
+*.bo
+*.ba
+
+# generated verilog and schedules
+*.sched
+*.v
+
+*.cache
+*.ip_user_files
+*.hw
+*.sources
+*.runs
+.Xil
+*.xpr
+*.tcl
