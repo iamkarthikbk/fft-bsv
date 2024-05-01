@@ -10,11 +10,12 @@
 *.sched
 *.v
 
-*.cache
-*.ip_user_files
-*.hw
-*.sources
-*.runs
+*.cache/
+*.ip_user_files/
+*.hw/
+*.sources/
+*.runs/
 .Xil
 *.xpr
-*.tcl
+*.tcl/
+build/
