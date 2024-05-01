@@ -2,12 +2,17 @@
 import Complex::*;
 import FixedPoint::*;
 import CustomReg::*;
+`include "fft.defines"
 
 export CustomTypes::*;
 export CustomReg::*;
 
-typedef Int#(16) Sample;
-typedef Complex#(FixedPoint#(16, 16)) ComplexSample;
+typedef `fft_points FFT_POINTS; // 8-pt fft. this needs to be changed to 32 for comparinig with hls.
+typedef `sample_size SampleSize;
+typedef TLog#(FFT_POINTS) FFT_LOG_POINTS;
+typedef Int#(SampleSize) Sample;
+typedef FixedPoint#(SampleSize, SampleSize) FPSample;
+typedef Complex#(FPSample) ComplexSample;
 
 // Turn a real Sample into a ComplexSample.
 function ComplexSample tocmplx(Sample x);
@@ -20,6 +25,4 @@ function Sample frcmplx(ComplexSample x);
 endfunction
 
 
-typedef 8 FFT_POINTS; // 8-pt fft. this needs to be changed to 32 for comparinig with hls.
-typedef TLog#(FFT_POINTS) FFT_LOG_POINTS;
 
