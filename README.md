@@ -8,10 +8,16 @@ This codebase contains FFT hardware models written in Bluespec System Verilog. Y
 1. Text Editor
 2. Bluespec Compiler - https://github.com/B-Lang-org/bsc/releases/tag/2024.01
 
-Steps to build verilog:
+Steps to build verilog from BSV:
 
 ```shell
 make verilog
+```
+
+Steps to build verilog from C++:
+
+```shell
+cd cpp ; vivado_hls -f script.tcl
 ```
 
 If you need help with using this code elsewhere, or something doesn't work at your end, too bad.
