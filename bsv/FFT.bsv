@@ -7,8 +7,9 @@ import GetPut       ::*;
 import Real         ::*;
 import Vector       ::*;
 import BRAMFIFO     ::*;
-
-import CustomTypes::*;
+import CustomTypes  ::*;
+import Multiplier   ::*;
+`include "fft.defines"
 
 typedef Server#(
     Vector#(FFT_POINTS, ComplexSample),
@@ -20,7 +21,7 @@ typedef Server#(
 function ComplexSample getTwiddle(Integer stage, Integer index, Integer points);
     Integer i = ((2*index)/(2 ** (log2(points)-stage))) * (2 ** (log2(points)-stage));
     return cmplx(fromReal(cos(fromInteger(i)*pi/fromInteger(points))),
-                 fromReal(-1*sin(fromInteger(i)*pi/fromInteger(points))));
+                    fromReal(-1*sin(fromInteger(i)*pi/fromInteger(points))));
 endfunction
 
 // Generate a table of all the needed twiddle factors.
