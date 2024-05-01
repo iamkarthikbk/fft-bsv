@@ -61,24 +61,6 @@ function Vector#(FFT_POINTS, ComplexSample) bitReverse(Vector#(FFT_POINTS,Comple
     return outVector;
 endfunction
 
-function Vector#(FFT_POINTS, ComplexSample) aebitReverse(Vector#(FFT_POINTS,ComplexSample) inVector);
-  Vector#(FFT_POINTS, ComplexSample) outVector = newVector();
-  // hardcoded for 8-pt fft.
-  // for(Integer i = 0; i < valueof(FFT_POINTS); i = i+1) begin
-  //     Bit#(FFT_LOG_POINTS) reversal = reverseBits(fromInteger(i));
-  //     outVector[reversal] = inVector[i];
-  // end
-  outVector[0] = inVector[0];
-  outVector[4] = inVector[1];
-  outVector[2] = inVector[2];
-  outVector[6] = inVector[3];
-  outVector[1] = inVector[4];
-  outVector[5] = inVector[5];
-  outVector[3] = inVector[6];
-  outVector[7] = inVector[7];
-  return outVector;
-endfunction
-
 // 2-way Butterfly
 function Vector#(2, ComplexSample) bfly2(Vector#(2, ComplexSample) t, ComplexSample k);
     ComplexSample m = t[1] * k;
@@ -112,46 +94,6 @@ function Vector#(FFT_POINTS, ComplexSample) stage_ft(TwiddleTable twiddles, Bit#
     return stage_out;
 endfunction
 
-function Vector#(FFT_POINTS, ComplexSample) ae_stage_ft(TwiddleTable twiddles, Bit#(TLog#(FFT_LOG_POINTS)) stage, Vector#(FFT_POINTS, ComplexSample) stage_in);
-  Vector#(FFT_POINTS, ComplexSample) stage_temp = newVector();
-  // hard coded for 8-pt fft.
-  // for(Integer i = 0; i < (valueof(FFT_POINTS)/2); i = i+1) begin
-  //     Integer idx = i * 2;
-  //     let twid = twiddles[stage][i];
-  //     let y = bfly2(takeAt(idx, stage_in), twid);
-
-  //     stage_temp[idx]   = y[0];
-  //     stage_temp[idx+1] = y[1];
-  // end
-  let y0 = bfly2(takeAt(0, stage_in), twiddles[stage][0]);
-  stage_temp[0] = y0[0];
-  stage_temp[1] = y0[1];
-  let y1 = bfly2(takeAt(2, stage_in), twiddles[stage][2]);
-  stage_temp[2] = y1[0];
-  stage_temp[3] = y1[1];
-  let y2 = bfly2(takeAt(4, stage_in), twiddles[stage][4]);
-  stage_temp[4] = y2[0];
-  stage_temp[5] = y2[1];
-  let y3 = bfly2(takeAt(6, stage_in), twiddles[stage][6]);
-  stage_temp[6] = y3[0];
-  stage_temp[7] = y3[1];
-
-  Vector#(FFT_POINTS, ComplexSample) stage_out = newVector();
-  // hardcoded for 8-pt fft.
-  // for (Integer i = 0; i < valueof(FFT_POINTS); i = i+1) begin
-  //     stage_out[i] = stage_temp[permute(i, valueof(FFT_POINTS))];
-  // end
-  stage_out[0] = stage_temp[0];
-  stage_out[1] = stage_temp[4];
-  stage_out[2] = stage_temp[1];
-  stage_out[3] = stage_temp[5];
-  stage_out[4] = stage_temp[2];
-  stage_out[5] = stage_temp[6];
-  stage_out[6] = stage_temp[3];
-  stage_out[7] = stage_temp[7];
-  return stage_out;
-endfunction
-
 module mkCombinationalFFT (FFT);
 
   // Statically generate the twiddle factors table.
@@ -162,30 +104,31 @@ module mkCombinationalFFT (FFT);
       return stage_ft(twiddles, stage, stage_in);
   endfunction
 
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) inputREG  <- mkReg(unpack(0));
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) outputREG <- mkReg(unpack(0));
 
   // This rule performs fft using a big mass of combinational logic.
   rule comb_fft;
 
     Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-    stage_data[0] = inputFIFO.first();
-    inputFIFO.deq();
+    stage_data[0] = inputREG;
+    // inputFIFO.deq();
 
     for(Integer stage = 0; stage < valueof(FFT_LOG_POINTS); stage=stage+1) begin
         stage_data[stage+1] = stage_f(fromInteger(stage), stage_data[stage]);
     end
 
-    outputFIFO.enq(stage_data[valueof(FFT_LOG_POINTS)]);
+    // outputFIFO.enq(stage_data[valueof(FFT_LOG_POINTS)]);
+    outputREG <= stage_data[valueof(FFT_LOG_POINTS)];
   endrule
 
   interface Put request;
     method Action put(Vector#(FFT_POINTS, ComplexSample) x);
-        inputFIFO.enq(bitReverse(x));
+        inputREG <= bitReverse(x);
     endmethod
   endinterface
 
-  interface Get response = toGet(outputFIFO);
+  interface Get response = toGet(outputREG);
 
 endmodule
 
@@ -199,92 +142,48 @@ module mkPipelinedFFT (FFT);
       return stage_ft(twiddles, stage, stage_in);
   endfunction
 
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb1  <- mkSizedBRAMFIFO(1);
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) isb2  <- mkSizedBRAMFIFO(1);
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) inputREG  <- mkReg(unpack(0));
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) isb1  <- mkReg(unpack(0));
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) isb2  <- mkReg(unpack(0));
+  Reg#(Vector#(FFT_POINTS, ComplexSample)) outputREG <- mkReg(unpack(0));
 
   // rule for the first stage
   rule stage1;
     Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-    stage_data[0] = inputFIFO.first();
-    inputFIFO.deq();
+    stage_data[0] = inputREG;
     stage_data[1] = stage_f(0, stage_data[0]);
-    isb1.enq(stage_data[1]);
+    isb1._write(stage_data[1]);
   endrule
 
   rule stage2;
   Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-  stage_data[1] = isb1.first;
-  isb1.deq;
+  stage_data[1] = isb1;
   stage_data[2] = stage_f(1, stage_data[1]);
-  isb2.enq(stage_data[2]);
+  isb2._write(stage_data[2]);
   endrule
 
   // rule for last stage
   rule stage3;
     Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-    stage_data[2] = isb2.first;
-    isb2.deq;
+    stage_data[2] = isb2;
     stage_data[3] = stage_f(2, stage_data[2]);
-    outputFIFO.enq(stage_data[valueof(FFT_LOG_POINTS)]);
+    outputREG._write(stage_data[valueof(FFT_LOG_POINTS)]);
   endrule
 
   interface Put request;
     method Action put(Vector#(FFT_POINTS, ComplexSample) x);
-        inputFIFO.enq(bitReverse(x));
+        inputREG._write(bitReverse(x));
     endmethod
   endinterface
 
-  interface Get response = toGet(outputFIFO);
-
-endmodule
-
-module mkAECombinationalFFT (FFT);
-
-  // Statically generate the twiddle factors table.
-  TwiddleTable twiddles = genTwiddles();
-
-  // Define the stage_f function which uses the generated twiddles.
-  function Vector#(FFT_POINTS, ComplexSample) stage_f(Bit#(TLog#(FFT_LOG_POINTS)) stage, Vector#(FFT_POINTS, ComplexSample) stage_in);
-    return ae_stage_ft(twiddles, stage, stage_in);
-  endfunction
-
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) inputFIFO  <- mkSizedBRAMFIFO(1);
-  FIFO#(Vector#(FFT_POINTS, ComplexSample)) outputFIFO <- mkSizedBRAMFIFO(1);
-
-  // This rule performs fft using a big mass of combinational logic.
-  rule comb_fft;
-
-    Vector#(TAdd#(1, FFT_LOG_POINTS), Vector#(FFT_POINTS, ComplexSample)) stage_data = newVector();
-    stage_data[0] = inputFIFO.first();
-    inputFIFO.deq();
-
-    // hardcoded for 8-pt fft.
-    // for(Integer stage = 0; stage < valueof(FFT_LOG_POINTS); stage=stage+1) begin
-    //     stage_data[stage+1] = stage_f(fromInteger(stage), stage_data[stage]);
-    // end
-    stage_data[1] = stage_f(0, stage_data[0]);
-    stage_data[2] = stage_f(1, stage_data[1]);
-
-    outputFIFO.enq(stage_data[valueof(FFT_LOG_POINTS)]);
-  endrule
-
-  interface Put request;
-    method Action put(Vector#(FFT_POINTS, ComplexSample) x);
-        inputFIFO.enq(aebitReverse(x));
-    endmethod
-  endinterface
-
-  interface Get response = toGet(outputFIFO);
+  interface Get response = toGet(outputREG);
 
 endmodule
 
 // Wrapper around The FFT module we actually want to use
 module mkFFT (FFT);
-    FFT fft <- mkCombinationalFFT();
-    // FFT fft <- mkAECombinationalFFT();
-    // FFT fft <- mkPipelinedFFT();
+    // FFT fft <- mkCombinationalFFT();
+    FFT fft <- mkPipelinedFFT();
 
     interface Put request = fft.request;
     interface Get response = fft.response;
