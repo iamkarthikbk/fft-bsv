@@ -209,6 +209,7 @@ module mkFoldedFFT (FFT);
     // i could provide a outp_ready method, or a waiting Action, but that would need modifications to the ifc.
     rule the_folded_compute;
         theREG <= stage_f(stage_counter, theREG);
+        stage_counter <= stage_counter + 1;
     endrule
 
     interface Put request;
@@ -227,35 +228,3 @@ module mkFFT (FFT);
     interface Put request = fft.request;
     interface Get response = fft.response;
 endmodule
-
-// this code is not being used at the moment.
-//
-// // Inverse FFT, based on the mkFFT module.
-// // ifft[k] = fft[N-k]/N
-// module mkIFFT (FFT);
-
-//     FFT fft <- mkFFT();
-//     FIFO#(Vector#(FFT_POINTS, ComplexSample)) outfifo <- mkSizedBRAMFIFO(1);
-
-//     Integer n = valueof(FFT_POINTS);
-//     Integer lgn = valueof(FFT_LOG_POINTS);
-
-//     function ComplexSample scaledown(ComplexSample x);
-//         return cmplx(x.rel >> lgn, x.img >> lgn);
-//     endfunction
-
-//     rule inversify (True);
-//         let x <- fft.response.get();
-//         Vector#(FFT_POINTS, ComplexSample) rx = newVector;
-
-//         for (Integer i = 0; i < n; i = i+1) begin
-//             rx[i] = x[(n - i)%n];
-//         end
-//         outfifo.enq(map(scaledown, rx));
-//     endrule
-
-//     interface Put request = fft.request;
-//     interface Get response = toGet(outfifo);
-
-// endmodule
-
