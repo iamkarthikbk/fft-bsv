@@ -219,11 +219,72 @@ module mkFoldedFFT (FFT);
     interface Get response = toGet(theREG);
 endmodule
 
+typedef enum {BFLY, PERMUTE} TraState deriving (Bits, Eq);
+
+// // this dude doesn't compile yet. i need to figure out how to play with those Integers without deriving Bits.
+// module mkSuperFoldedFFT (FFT);
+
+//     // Statically generate the twiddle factors table.
+//     TwiddleTable twiddles = genTwiddles();
+
+//     // the reg to hold current state
+//     Reg#(Vector#(FFT_POINTS, ComplexSample)) theREG  <- mkRegularReg(unpack(0));
+
+//     // intra stage counter 1
+//     Reg#(Bit#(TLog#(TDiv#(FFT_POINTS, 2)))) trasc_1 <- mkRegularReg(0);
+
+//     // intra stage counter 2
+//     Reg#(Bit#(TLog#(FFT_POINTS))) trasc_2 <- mkRegularReg(0);
+
+//     // inter stage counter
+//     Reg#(Bit#(TLog#(FFT_LOG_POINTS))) tersc <- mkRegularReg(0);
+
+//     // intra-stage state face reg - starts with a bfly.
+//     Reg#(TraState) trast <- mkRegularReg(BFLY);
+
+//     rule slap_bfly (trast == BFLY);
+//         Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
+//         Integer idx = trasc_1 * 2;
+//         let twid = twiddles[tersc][trasc_1];
+//         let y = bfly2(takeAt(idx, trascratch), twid);
+//         trascratch[idx] = y[0];
+//         trascratch[idx+1] = y[1];
+//         theREG <= trascratch;
+//         trasc_1 <= trasc_1 + 1;
+//         if (trasc_1 == valueOf(FFT_POINTS)/2) begin
+//             trast <= PERMUTE;
+//         end
+//     endrule
+
+//     rule confuse_reader (trast == PERMUTE);
+//         // don't get confused. im just permuting here.
+//         Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
+//         trascratch[trasc_2] = trascratch[permute(trasc_2, valueOf(FFT_POINTS))];
+//         theREG <= trascratch;
+//         trasc_2 <= trasc_2 + 1;
+//         if (trasc_2 == fromInteger(valueOf(FFT_POINTS))) begin
+//             trast <= BFLY;
+//             tersc <= tersc + 1;
+//         end
+//     endrule
+
+//     // takes fft inputs
+//     interface Put request;
+//         method Action put(Vector#(FFT_POINTS, ComplexSample) x) = theREG._write(bitReverse(x));
+//     endinterface
+
+//     // gives fft outputs
+//     interface Get response = toGet(theREG);
+
+// endmodule: mkSuperFoldedFFT
+
+
 // Wrapper around The FFT module we actually want to use
 module mkFFT (FFT);
     // FFT fft <- mkCombinationalFFT();
     // FFT fft <- mkPipelinedFFT();
     FFT fft <- mkFoldedFFT();
+    // FFT fft <- mkSuperFoldedFFT();
 
     interface Put request = fft.request;
     interface Get response = fft.response;
