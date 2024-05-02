@@ -2,7 +2,7 @@
 
 **_NOTE_**: This codebase uses MIT's lab2 harness from 6.375 for BSV and IITM's FFT from EE5332 for CPP as it's base.
 
-This codebase contains FFT hardware models written in Bluespec System Verilog. You may build verilog by using the Bluespec compiler (linked below). There is also a C++ version which can be used for high-level synthesis.
+This codebase contains FFT hardware models written in Bluespec System Verilog (and also C++). You may build verilog by using the Bluespec compiler (linked below). There is also a C++ version which can be used for high-level synthesis.
 
 ## Prerequisites
 1. Text Editor
