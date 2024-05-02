@@ -1,6 +1,8 @@
 # This file contains the synth numbers.
 
-![plt](./plot.png)
+![plt](./_artifacts/plot.png)
+
+## Synthesis Results.
 
 |     Transformation    	| Tables 	| Flops 	| DSPs 	| BRAMs 	|
 |:---------------------:	|:------:	|:-----:	|:----:	|:-----:	|
@@ -13,3 +15,7 @@
 | bfly_pipe4, prim_fold 	|   2918 	|  2366 	|    7 	|    18 	|
 |      stage_1fold      	|   3876 	|   518 	|   40 	|     0 	|
 |       superfold       	|        	|       	|      	|       	|
+
+## Synthesis Observations.
+
+Bluespec generated verilog, somehow, does not infer DSPs until I get to the folded architecture.
