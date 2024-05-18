@@ -42,3 +42,27 @@ In order to pipeline this, I inserted flops as ISBs in betweent he columns of bl
 I folded the architecture as per the arrows shown in the diagram, in order to isolate the actual compute into a single stage. Essentially, the latency will now remain the same which is 4 cycles, but the throughput will be four times lower as a result of this folding(3). The circuit should now look like what is on the right side of the orange arrow.
 In order to fold further, I am trying to use only two butterfly instances overall, as per the arrows shown to the right of the orange arrow (4). The throughput will now reduce by 50%, essentially making it 8 cycles.
 Now, we can further fold this two-butterfly implementation to use a single butterfly, further dropping the throughput by 50%, making it 16 cycles(5).
+
+## Synthesis Results as a Figure.
+
+![plt](./_artifacts/plot.png)
+
+## Synthesis Results as numbers.
+
+|     Transformation    	| Tables 	| Flops 	| DSPs 	| BRAMs 	|
+|:---------------------:	|:------:	|:-----:	|:----:	|:-----:	|
+|         unopt         	|   4840 	|  3356 	|   20 	|    14 	|
+|       prim_only       	|   6075 	|  1024 	|    0 	|     0 	|
+|       data_pack       	|   8280 	|  6058 	|   40 	|    16 	|
+|         w_rom         	|   4840 	|  3356 	|   20 	|    14 	|
+|       bfly_pipe2      	|   3877 	|  3079 	|   12 	|    18 	|
+|       bfly_pipe4      	|   5621 	|  2064 	|    0 	|     0 	|
+| bfly_pipe4, prim_fold 	|   2918 	|  2366 	|    7 	|    18 	|
+|      stage_1fold      	|   3876 	|   518 	|   40 	|     0 	|
+|       superfold       	|   3701 	|   522 	|   32 	|     0 	|
+
+## Synthesis Observations.
+
+1. Bluespec generated verilog, somehow, does not infer DSPs until I get to the folded architecture. I've validated that the * operand is indeed present in the generated verilog. im curious curious why.
+
+2. the superfolded architecture does not give you much of an area reduction, because there's just too much multiplexing. this is evident from the bsv itself. still, some reduction can be observed.
