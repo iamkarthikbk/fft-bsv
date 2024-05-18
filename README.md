@@ -33,7 +33,7 @@ This codebase implements five architectures for the Pease FFT.
 4. Folded by both pipeline stages and available butterflies (mkSuperFoldedFFT).
 5. Folded further to use a single butterfly (mkUltraFoldedFFT).
 
-The last two mentioned above are under construction as of this commit. However, all architectures have been pretty well described in the figure below.
+The last one mentioned above is under construction as of this commit. However, all architectures have been pretty well described in the figure below.
 
 ![arch description as a block diagram.](./_artifacts/fft_hw_new.png)
 

@@ -14,8 +14,10 @@
 |       bfly_pipe4      	|   5621 	|  2064 	|    0 	|     0 	|
 | bfly_pipe4, prim_fold 	|   2918 	|  2366 	|    7 	|    18 	|
 |      stage_1fold      	|   3876 	|   518 	|   40 	|     0 	|
-|       superfold       	|        	|       	|      	|       	|
+|       superfold       	|   3701 	|   522 	|   32 	|     0 	|
 
 ## Synthesis Observations.
 
-Bluespec generated verilog, somehow, does not infer DSPs until I get to the folded architecture.
+1. Bluespec generated verilog, somehow, does not infer DSPs until I get to the folded architecture. I've validated that the * operand is indeed present in the generated verilog. im curious curious why.
+
+2. the superfolded architecture does not give you much of an area reduction, because there's just too much multiplexing. this is evident from the bsv itself. still, some reduction can be observed.
