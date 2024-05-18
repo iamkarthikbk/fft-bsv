@@ -23,6 +23,3 @@ endfunction
 function Sample frcmplx(ComplexSample x);
     return unpack(truncate(x.rel.i));
 endfunction
-
-
-

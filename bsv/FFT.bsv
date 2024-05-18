@@ -221,70 +221,107 @@ endmodule
 
 typedef enum {BFLY, PERMUTE} TraState deriving (Bits, Eq);
 
-// // this dude doesn't compile yet. i need to figure out how to play with those Integers without deriving Bits.
-// module mkSuperFoldedFFT (FFT);
+// this dude doesn't compile yet. i need to figure out how to play with those Integers without deriving Bits.
+module mkSuperFoldedFFT (FFT);
 
-//     // Statically generate the twiddle factors table.
-//     TwiddleTable twiddles = genTwiddles();
+    // Statically generate the twiddle factors table.
+    TwiddleTable twiddles = genTwiddles();
 
-//     // the reg to hold current state
-//     Reg#(Vector#(FFT_POINTS, ComplexSample)) theREG  <- mkRegularReg(unpack(0));
+    // the reg to hold current state
+    Reg#(Vector#(FFT_POINTS, ComplexSample)) theREG  <- mkRegularReg(unpack(0));
 
-//     // intra stage counter 1
-//     Reg#(Bit#(TLog#(TDiv#(FFT_POINTS, 2)))) trasc_1 <- mkRegularReg(0);
+    // intra stage counter 1
+    Reg#(Bit#(TLog#(TDiv#(FFT_POINTS, 2)))) trasc_1 <- mkRegularReg(0);
 
-//     // intra stage counter 2
-//     Reg#(Bit#(TLog#(FFT_POINTS))) trasc_2 <- mkRegularReg(0);
+    // trasc_1 overflow
+    Reg#(Bool) trasc_1_selfloop <- mkRegularReg(False);
 
-//     // inter stage counter
-//     Reg#(Bit#(TLog#(FFT_LOG_POINTS))) tersc <- mkRegularReg(0);
+    // intra stage counter 2
+    Reg#(Bit#(TLog#(FFT_POINTS))) trasc_2 <- mkRegularReg(0);
 
-//     // intra-stage state face reg - starts with a bfly.
-//     Reg#(TraState) trast <- mkRegularReg(BFLY);
+    // trasc_2 overflow
+    Reg#(Bool) trasc_2_selfloop <- mkRegularReg(False);
 
-//     rule slap_bfly (trast == BFLY);
-//         Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
-//         Integer idx = trasc_1 * 2;
-//         let twid = twiddles[tersc][trasc_1];
-//         let y = bfly2(takeAt(idx, trascratch), twid);
-//         trascratch[idx] = y[0];
-//         trascratch[idx+1] = y[1];
-//         theREG <= trascratch;
-//         trasc_1 <= trasc_1 + 1;
-//         if (trasc_1 == valueOf(FFT_POINTS)/2) begin
-//             trast <= PERMUTE;
-//         end
-//     endrule
+    // inter stage counter
+    Reg#(Bit#(TLog#(FFT_LOG_POINTS))) tersc <- mkRegularReg(0);
 
-//     rule confuse_reader (trast == PERMUTE);
-//         // don't get confused. im just permuting here.
-//         Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
-//         trascratch[trasc_2] = trascratch[permute(trasc_2, valueOf(FFT_POINTS))];
-//         theREG <= trascratch;
-//         trasc_2 <= trasc_2 + 1;
-//         if (trasc_2 == fromInteger(valueOf(FFT_POINTS))) begin
-//             trast <= BFLY;
-//             tersc <= tersc + 1;
-//         end
-//     endrule
+    // intra-stage state face reg - starts with a bfly.
+    Reg#(TraState) trast <- mkRegularReg(BFLY);
 
-//     // takes fft inputs
-//     interface Put request;
-//         method Action put(Vector#(FFT_POINTS, ComplexSample) x) = theREG._write(bitReverse(x));
-//     endinterface
+    rule slap_bfly (trast == BFLY && !trasc_1_selfloop);
+        // takeables - hardcoded for 8 pts.
+        Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
+        Vector#(2, ComplexSample) takeable_0 = takeAt(0, trascratch);
+        Vector#(2, ComplexSample) takeable_1 = takeAt(1, trascratch);
+        Vector#(2, ComplexSample) takeable_2 = takeAt(2, trascratch);
+        Vector#(2, ComplexSample) takeable_3 = takeAt(3, trascratch);
+        Vector#(2, ComplexSample) takeable_4 = takeAt(4, trascratch);
+        Vector#(2, ComplexSample) takeable_5 = takeAt(5, trascratch);
+        Vector#(2, ComplexSample) takeable_6 = takeAt(6, trascratch);
+        Vector#(2, ComplexSample) takeable_7 = takeAt(7, trascratch);
+        Bit#(TDiv#(CustomTypes::FFT_POINTS, 2)) idx = zeroExtend(trasc_1 * 2);
+        let twid = twiddles[tersc][trasc_1];
 
-//     // gives fft outputs
-//     interface Get response = toGet(theREG);
+        let y = case (idx) matches
+            0: return bfly2(takeable_0, twid);
+            1: return bfly2(takeable_1, twid);
+            2: return bfly2(takeable_2, twid);
+            3: return bfly2(takeable_3, twid);
+            4: return bfly2(takeable_4, twid);
+            5: return bfly2(takeable_5, twid);
+            6: return bfly2(takeable_6, twid);
+            7: return bfly2(takeable_7, twid);
+        endcase;
 
-// endmodule: mkSuperFoldedFFT
+        trascratch[idx] = y[0];
+        trascratch[idx+1] = y[1];
+        theREG <= trascratch;
+        trasc_1 <= trasc_1 + 1;
+        if (trasc_1 == fromInteger(valueOf(FFT_POINTS)/2 - 1)) begin
+            trasc_1_selfloop <= True;
+        end
+    endrule
+
+    rule zapp_bfly (trast == BFLY && trasc_1_selfloop);
+        trasc_1_selfloop <= False;
+        trast <= PERMUTE;
+    endrule
+
+    for (Integer i = 0 ; i < valueOf(FFT_POINTS) ; i = i + 1) begin
+    rule confuse_reader (trast == PERMUTE && trasc_2 == fromInteger(i) && !trasc_2_selfloop);
+        // don't get confused. im just permuting here.
+        Vector#(FFT_POINTS, ComplexSample) trascratch = theREG;
+        trascratch[trasc_2] = trascratch[permute(i, valueOf(FFT_POINTS))];
+        theREG <= trascratch;
+        trasc_2 <= trasc_2 + 1;
+        if (trasc_2 == fromInteger(valueOf(FFT_POINTS) - 1)) begin
+            trasc_2_selfloop <= True;
+        end
+    endrule
+    end
+
+    rule zapp_trasc_2 (trast == PERMUTE && trasc_2_selfloop);
+        trast <= BFLY;
+        tersc <= tersc + 1;
+    endrule
+
+    // takes fft inputs
+    interface Put request;
+        method Action put(Vector#(FFT_POINTS, ComplexSample) x) = theREG._write(bitReverse(x));
+    endinterface
+
+    // gives fft outputs
+    interface Get response = toGet(theREG);
+
+endmodule: mkSuperFoldedFFT
 
 
 // Wrapper around The FFT module we actually want to use
 module mkFFT (FFT);
     // FFT fft <- mkCombinationalFFT();
     // FFT fft <- mkPipelinedFFT();
-    FFT fft <- mkFoldedFFT();
-    // FFT fft <- mkSuperFoldedFFT();
+    // FFT fft <- mkFoldedFFT();
+    FFT fft <- mkSuperFoldedFFT();
 
     interface Put request = fft.request;
     interface Get response = fft.response;
